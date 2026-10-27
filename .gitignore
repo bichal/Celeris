@@ -1,0 +1,31 @@
+# >>> bichal-build-logic: managed by `bichal sync`, add your own entries below the block
+.*/
+!.github/
+build/
+build-native/
+versions/
+run/
+logs/
+# generated from mod.stonecutter.properties.toml + the common TOML
+stonecutter.properties.toml
+# local secrets and settings (see bichal-build-logic/.env.example)
+.env
+repomix*
+__pycache__/
+# <<< bichal-build-logic
+
+# Native builds: made by CMake (-Pbichal.native.build=true) or staged by CI,
+# never committed (see README, "Native libraries").
+/natives/
+
+# Native binaries are never committed: CI builds them per platform
+# (bichal-build-logic mod-ci.yml, [natives.*]); see README, "Native code".
+*.so
+*.dll
+*.dylib
+*.lib
+*.exp
+*.pdb
+*.a
+*.o
+*.obj
