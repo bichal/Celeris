@@ -205,8 +205,9 @@ publishing {
 }
 
 // JNI symbols of the staged native libraries against the native methods declared in
-// the Java sources (scripts/verify-jni-symbols.sh, a local-only script: where it is absent
-// the task is skipped). Part of `check`. -PrequireNative=true
+// the Java sources (scripts/verify-jni-symbols.sh). Part of `check`, and not optional: 0.3.1.1
+// shipped natives that exported Java_com_bichal_* for classes in net.bichal.*, because this
+// check was skipped wherever the script was not in the checkout. -PrequireNative=true
 // makes a missing library a failure instead of a skip (the release gate sets it).
 // One check per library, each against the class that loads it: a platform without the
 // physics kernel (Java fallback) is not held to its symbols.
@@ -222,7 +223,11 @@ val verifyJniSymbols = listOf(
         group = "verification"
         description = "Checks the Java_* symbols of $library against the native methods of $loader."
         dependsOn("collectNatives")
-        onlyIf { jniSymbolsScript.isFile }
+        doFirst {
+            if (!jniSymbolsScript.isFile) {
+                throw GradleException("scripts/verify-jni-symbols.sh is missing: the JNI symbol check is part of `check` and is not optional")
+            }
+        }
         workingDir = rootProject.projectDir
         commandLine(
             "sh", jniSymbolsScript.path,

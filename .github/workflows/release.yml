@@ -58,18 +58,11 @@ jobs:
           cmake --build build-native/linux --parallel
           ctest --test-dir build-native/linux --output-on-failure
 
+      # Not optional: v0.3.1.1 was published with natives whose Java_* names no longer matched the classes.
+      # -PrequireNative=true makes a missing library a failure; both tasks set their own library and class globs.
       - name: JNI symbols match the Java sources
         working-directory: mod
-        env:
-          REQUIRE_LIBRARIES: "1"
-        run: |
-          ./gradlew :1.21.1:collectNatives -Pbichal.native.build=true --no-daemon
-          # scripts/ is local-only (not in git): the symbol check runs where the script exists.
-          if [ -f scripts/verify-jni-symbols.sh ]; then
-            sh scripts/verify-jni-symbols.sh versions/1.21.1/build/generated/natives src/main/java src/ffm/java src/vector/java
-          else
-            echo "scripts/verify-jni-symbols.sh not in this checkout: symbol check skipped" >&2
-          fi
+        run: ./gradlew :1.21.1:verifyJniSymbolsPhysics :1.21.1:verifyJniSymbolsZstd -PrequireNative=true -Pbichal.native.build=true --no-daemon
 
       # REQUIRE_LIBRARIES makes a missing or unloadable library fail these tests instead of skipping them.
       - name: JNI tests against the built kernel

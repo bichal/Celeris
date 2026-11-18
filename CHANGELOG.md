@@ -8,12 +8,16 @@ grouped as Added, Changed, Deprecated, Removed, Fixed and Security. Versions fol
 ### Added
 
 - The Gradle task `verifyJniSymbols` (part of `check`): every `native` method must have an exported `Java_*` symbol,
-  and every exported `Java_*` symbol must come from a `native` method. It runs the local-only
-  `scripts/verify-jni-symbols.sh` and is skipped where that script is absent (`scripts/` and `docs/audit/` are no
-  longer tracked by git).
+  and every exported `Java_*` symbol must come from a `native` method. It runs `scripts/verify-jni-symbols.sh`, which
+  is tracked (the rest of `scripts/`, and `docs/audit/`, are not) and cannot be skipped.
 - `.github/workflows/release.yml`: release gate for `v*` tags (no tracked binaries, native self-test, JNI symbols,
   JNI, parity and hostile-input tests with the native library required).
 - `VectorBackendParityTest`, and dirty-queue, entity-bridge regression tests.
+- The JNI symbol check was dropped from the repository together with the rest of `scripts/` and so skipped wherever the
+  script was not in the checkout, the release gate's copy of it included. That is how 0.3.1.1 was published with
+  natives exporting `Java_com_bichal_*` for classes in `net.bichal.*`. The script is tracked again, `check` fails
+  without it, and the release gate runs the two Gradle tasks with `-PrequireNative=true` instead of testing whether
+  the script exists. Run against the library inside the 0.3.1.1 jar it reports six missing and six stale symbols.
 - `PayloadCompression.validate`, `TransitDeltaRecorder.droppedOperations`, `LongRingDirtyQueue.close`.
 
 ### Fixed

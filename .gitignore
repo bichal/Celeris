@@ -33,5 +33,6 @@ __pycache__/
 *.obj
 
 # Local-only working material (kept on disk, never committed)
-/scripts/
+/scripts/*
+!/scripts/verify-jni-symbols.sh
 /docs/audit/
