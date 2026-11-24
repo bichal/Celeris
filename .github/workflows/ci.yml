@@ -46,7 +46,7 @@ concurrency:
 
 jobs:
   mod:
-    uses: bichal/BichalBuildLogic/.github/workflows/mod-ci.yml@da793273ebb778d9d8ea4bc31f789472d205a741 # bichal-build-logic main, 2026-11-01 (no release tags yet)
+    uses: bichal/BichalBuildLogic/.github/workflows/mod-ci.yml@de81f15fdaca1e20b4a39f2309e658f02a3e535a # bichal-build-logic main, 2026-11-24 (no release tags yet)
     permissions:
       contents: write
     with:
