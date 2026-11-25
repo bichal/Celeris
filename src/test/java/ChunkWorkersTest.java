@@ -82,27 +82,66 @@ class ChunkWorkersTest {
     }
 
     @Test
-    void concurrentRunIsRefusedWhileOneIsInProgress() throws Exception {
+    void runsFromOtherThreadsShareThePoolUntilEverySlotIsTaken() throws Exception {
         try (ChunkWorkers w = new ChunkWorkers(2)) {
-            CountDownLatch started = new CountDownLatch(1);
+            int owners = ChunkWorkers.MAX_CONCURRENT_RUNS;
+            CountDownLatch started = new CountDownLatch(owners);
             CountDownLatch release = new CountDownLatch(1);
-            Thread owner = new Thread(() -> w.run(c -> {
-                if (c == 0) {
+            Thread[] threads = new Thread[owners];
+            for (int o = 0; o < owners; o++) {
+                // One chunk: it runs on the owner itself and holds the slot until released.
+                threads[o] = new Thread(() -> w.run(c -> {
                     started.countDown();
                     try {
                         release.await();
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                     }
-                }
-            }, 4));
-            owner.start();
+                }, 1));
+                threads[o].start();
+            }
             started.await();
             assertThrows(IllegalStateException.class, () -> w.run(c -> { }, 4));
             assertFalse(w.tryRun(c -> { }, 4));
             release.countDown();
-            owner.join();
+            for (Thread t : threads) {
+                t.join();
+            }
             assertTrue(w.tryRun(c -> { }, 4));
+        }
+    }
+
+    @Test
+    void concurrentRunsEachRunEveryChunkOnce() throws Exception {
+        try (ChunkWorkers w = new ChunkWorkers(3)) {
+            int owners = 6; // more than the slots: some runs are refused and done by hand
+            AtomicReference<Throwable> problem = new AtomicReference<>();
+            Thread[] threads = new Thread[owners];
+            for (int o = 0; o < owners; o++) {
+                int seed = o;
+                threads[o] = new Thread(() -> {
+                    for (int run = 0; run < 500; run++) {
+                        int n = 1 + (run * 7 + seed) % 41;
+                        AtomicIntegerArray hits = new AtomicIntegerArray(n);
+                        if (!w.tryRun(hits::incrementAndGet, n)) {
+                            for (int c = 0; c < n; c++) {
+                                hits.incrementAndGet(c);
+                            }
+                        }
+                        for (int c = 0; c < n; c++) {
+                            if (hits.get(c) != 1) {
+                                problem.compareAndSet(null, new AssertionError(
+                                        "owner " + seed + " run " + run + " chunk " + c + " ran " + hits.get(c) + " times"));
+                            }
+                        }
+                    }
+                });
+                threads[o].start();
+            }
+            for (Thread t : threads) {
+                t.join();
+            }
+            assertNull(problem.get());
         }
     }
 

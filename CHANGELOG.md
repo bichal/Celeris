@@ -50,6 +50,10 @@ grouped as Added, Changed, Deprecated, Removed, Fixed and Security. Versions fol
 
 ### Changed
 
+- `ChunkWorkers` runs up to four batches from different threads at once (`MAX_CONCURRENT_RUNS`), each in a slot of
+  its own; the workers drain whichever slots have chunks left, each starting from its own slot, and every caller still
+  works on its batch. Before, a second batch was refused and its caller did every chunk alone, which is what happened
+  to the render thread whenever a background thread held the pool. A run from inside a chunk task is still refused.
 - The compression codec is chosen the first time a mod uses it instead of at startup, so libzstd is not loaded and
   self-tested when no mod compresses anything. `CelerisFeatures.isNativeCompressionActive()` and
   `compressionCodecName()` still choose it when called.
