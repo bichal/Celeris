@@ -1,7 +1,6 @@
 package net.bichal.mods.celeris;
 
 import net.bichal.mods.celeris.config.CelerisSettings;
-import net.bichal.mods.celeris.core.memory.CelerisCodecs;
 import net.bichal.mods.celeris.core.memory.backend.CelerisRuntime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,8 +14,8 @@ import net.neoforged.fml.common.Mod;
 
 /**
  * Mod entry point on NeoForge (on Fabric: {@code CelerisFabric}). Triggers
- * backend/codec selection (see {@link CelerisRuntime}, {@link CelerisCodecs})
- * and network registration on startup, and registers the config file
+ * backend selection (see {@link CelerisRuntime}; the codec, {@code CelerisCodecs}, waits for its
+ * first use) and network registration on startup, and registers the config file
  * ({@code CelerisConfig}; its screen is {@code CelerisClient}'s); has no state or methods another mod
  * would call directly -- for runtime feature checks, use
  * {@code net.bichal.mods.celeris.api.CelerisFeatures} instead.
@@ -37,12 +36,15 @@ public final class Celeris {
     }
     //?}
 
-    /** Selects the memory backend and the compression codec once, at startup, and logs them. Both loaders call it. */
+    /**
+     * Selects the memory backend once, at startup, and logs it. Both loaders call it. The compression codec is not
+     * chosen here: libzstd is loaded and self-tested the first time a mod asks for it, and never when none does.
+     */
     @SuppressWarnings("resource")
     public static void start() {
         LOGGER.info("Celeris engine initializing");
         LOGGER.info("Celeris memory backend: {}", CelerisRuntime.backend().name());
-        LOGGER.info("Celeris compression codec: {}", CelerisCodecs.compressionCodec().name());
+        LOGGER.info("Celeris compression codec: chosen on first use");
         LOGGER.info("Celeris network compression level: {}", CelerisSettings.compressionLevel());
         LOGGER.info("Celeris engine working");
     }

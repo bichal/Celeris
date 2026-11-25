@@ -8,8 +8,8 @@ import net.fabricmc.api.ModInitializer;
 
 /^*
  * Mod entry points on Fabric (fabric.mod.json: "main" and "client"). The same
- * startup as NeoForge's {@link Celeris}: the config file, backend and codec
- * selection, then the network channel.
+ * startup as NeoForge's {@link Celeris}: the config file, backend selection,
+ * then the network channel.
  ^/
 public final class CelerisFabric implements ModInitializer, ClientModInitializer {
 

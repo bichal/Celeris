@@ -50,4 +50,7 @@ grouped as Added, Changed, Deprecated, Removed, Fixed and Security. Versions fol
 
 ### Changed
 
+- The compression codec is chosen the first time a mod uses it instead of at startup, so libzstd is not loaded and
+  self-tested when no mod compresses anything. `CelerisFeatures.isNativeCompressionActive()` and
+  `compressionCodecName()` still choose it when called.
 - Gradle must run on JDK 25 (Fabric Loom 1.18.3 needs it), even for the 1.21.x nodes. Documentation to follow.
