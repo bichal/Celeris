@@ -6,7 +6,7 @@ Celeris works without any startup flags. The flags on this page turn on faster c
 
 | Minecraft | Java | Flags | What they turn on |
 |---|---|---|---|
-| 1.21.x | 21 | `--enable-preview` | The FFM code paths. In the current release this is also what the native physics kernel needs. See the note below. |
+| 1.21.x | 21 | `--enable-preview` | The FFM code paths. On 0.3.1.1 this is also what the native physics kernel needs. See the note below. |
 | 1.21.x | 21 | `--enable-preview --add-modules=jdk.incubator.vector` | The same, plus faster SIMD math. |
 | 26.x | 25 | `--add-modules=jdk.incubator.vector` | Faster SIMD math. Java 25 already has the other paths open. |
 
@@ -14,7 +14,7 @@ Celeris works without any startup flags. The flags on this page turn on faster c
 
 In version 0.3.1.1, the native parts (the physics kernel and zstd) were built with function names that do not match the Java classes. Java cannot link them, so Celeris uses the FFM path or the Java code instead. On Java 21, `--enable-preview` lets Celeris use FFM, so the native physics kernel can run.
 
-The fix is already in the source code and will ship in the next release. After that, the native parts load without flags, and these flags only add FFM memory and SIMD math.
+Version 0.3.2 fixes this. From 0.3.2 the native parts load without flags, and these flags only add FFM memory and SIMD math.
 
 ## Advanced switches
 

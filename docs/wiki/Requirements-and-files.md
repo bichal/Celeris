@@ -13,20 +13,20 @@ Each file covers a range of Minecraft versions. Find your version in the table, 
 
 | Minecraft version | NeoForge file | Java |
 |---|---|---|
-| 1.21 to 1.21.6 | `celeris-0.3.1.1+1.21.1.jar` | 21 |
-| 1.21.7 to 1.21.10 | `celeris-0.3.1.1+1.21.10.jar` | 21 |
-| 1.21.11 | `celeris-0.3.1.1+1.21.11.jar` | 21 |
-| 26.1 to 26.3 | `celeris-0.3.1.1+26.1.jar` | 25 |
+| 1.21 to 1.21.6 | `celeris-0.3.2+1.21.1.jar` | 21 |
+| 1.21.7 to 1.21.10 | `celeris-0.3.2+1.21.10.jar` | 21 |
+| 1.21.11 | `celeris-0.3.2+1.21.11.jar` | 21 |
+| 26.1 to 26.3 | `celeris-0.3.2+26.1.jar` | 25 |
 
-**Example 1:** You play Minecraft 1.21.4 with NeoForge. 1.21.4 is in the first row, so you download `celeris-0.3.1.1+1.21.1.jar`.
+**Example 1:** You play Minecraft 1.21.4 with NeoForge. 1.21.4 is in the first row, so you download `celeris-0.3.2+1.21.1.jar`.
 
-**Example 2:** Your server runs Minecraft 26.2 with NeoForge. 26.2 is in the last row, so you download `celeris-0.3.1.1+26.1.jar`.
+**Example 2:** Your server runs Minecraft 26.2 with NeoForge. 26.2 is in the last row, so you download `celeris-0.3.2+26.1.jar`.
 
 ## Fabric
 
 Fabric files have `-fabric` at the end of their name. Use the same row of the table as above.
 
-**Example:** You play Minecraft 26.2 with Fabric. Download `celeris-0.3.1.1+26.1-fabric.jar`.
+**Example:** You play Minecraft 26.2 with Fabric. Download `celeris-0.3.2+26.1-fabric.jar`.
 
 You also need Fabric Loader 0.16 or newer, and Fabric API.
 

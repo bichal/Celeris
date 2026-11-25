@@ -15,7 +15,7 @@ repositories {
 
 dependencies {
     // One artifact per Minecraft build: celeris-1.21.1, celeris-1.21.10, celeris-1.21.11 or celeris-26.1
-    implementation("net.bichal.mods:celeris-1.21.1:0.3.1.1")
+    implementation("net.bichal.mods:celeris-1.21.1:0.3.2")
 }
 ```
 
@@ -23,7 +23,7 @@ For Fabric with Fabric Loom, use the `-fabric` artifact:
 
 ```kotlin
 dependencies {
-    modImplementation("net.bichal.mods:celeris-1.21.1-fabric:0.3.1.1")
+    modImplementation("net.bichal.mods:celeris-1.21.1-fabric:0.3.2")
 }
 ```
 
@@ -35,14 +35,16 @@ For NeoForge, add this to `neoforge.mods.toml`. Replace `yourmod` with your own 
 [[dependencies.yourmod]]
 modId = "celeris"
 type = "required"
-versionRange = "[0.3.1.1,)"
+versionRange = "[0.3.2,)"
 ordering = "AFTER"
 side = "BOTH"
 ```
 
-For Fabric, add `"celeris": ">=0.3.1.1"` to the `depends` section of `fabric.mod.json`.
+For Fabric, add `"celeris": ">=0.3.2"` to the `depends` section of `fabric.mod.json`.
 
-Use the oldest Celeris version your mod was tested with. 0.3.1.1 is the current one.
+Use the oldest Celeris version your mod was tested with. 0.3.2 is the current one, and the first whose native parts
+load (0.3.1.1 always fell back to FFM or Java code), so ask for at least 0.3.2 if your mod calls
+`CelerisPhysics.allowNative`.
 
 ## 3. Know the main packages
 

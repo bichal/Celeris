@@ -5,6 +5,8 @@ grouped as Added, Changed, Deprecated, Removed, Fixed and Security. Versions fol
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-11-25
+
 ### Added
 
 - The Gradle task `verifyJniSymbols` (part of `check`): every `native` method must have an exported `Java_*` symbol,
@@ -19,6 +21,8 @@ grouped as Added, Changed, Deprecated, Removed, Fixed and Security. Versions fol
   without it, and the release gate runs the two Gradle tasks with `-PrequireNative=true` instead of testing whether
   the script exists. Run against the library inside the 0.3.1.1 jar it reports six missing and six stale symbols.
 - `PayloadCompression.validate`, `TransitDeltaRecorder.droppedOperations`, `LongRingDirtyQueue.close`.
+- `CelerisPhysics.allowNative(modId)`: a mod asks for the native physics kernel from its initialiser, before the first
+  batch (see Changed).
 
 ### Fixed
 
@@ -42,14 +46,22 @@ grouped as Added, Changed, Deprecated, Removed, Fixed and Security. Versions fol
 - CI: the sanitizer workflow triggers on `main` (and weekly), the release gate pins the same build-logic commit as
   `ci.yml`.
 - Removed the unused `compression_algo` setting.
-
+- The default pair capacity of a batch is capped at 2^28, so a huge batch no longer overflows it; an unknown
+  `-Dceleris.physics.engine` value is logged and treated as `auto`; the zstd self-test frees only what it allocated.
 - The JNI entry points of the physics kernel and of the zstd shim were exported as `Java_com_bichal_*`, but the Java
   classes are `net.bichal.mods.celeris.*`. `System.load` succeeded and the native methods could not link, so
-  Celeris silently used FFM or the Java path. The fix renames the entry points to `Java_net_bichal_*`. Released jars
-  from 0.3.1.1 still carry the old names until the next release is built.
+  Celeris silently used FFM or the Java path. The fix renames the entry points to `Java_net_bichal_*`; 0.3.2 is the
+  first release built with it.
 
 ### Changed
 
+- The native physics kernel is opt-in: without a request the engine is the pure-Java kernel. Measured side by side,
+  the native kernel steps items about twice as fast, but the step is a few percent of a server tick and on a real
+  server the three engines tie. A mod calls `CelerisPhysics.allowNative("modid")` before its first batch to get it
+  (JNI, then FFM, then Java); `-Dceleris.physics.engine` still has the last word (`java`, `auto`, `jni`, `ffm`, `off`).
+- Native kernel: the per-body input check works on the IEEE bit pattern (FACGE on AArch64), and the clamp before
+  floor/ceil is skipped where that check already bounds the value. Results are bit-identical; the step is 3 to 10 %
+  faster in batches of 1,024 on x86.
 - `ChunkWorkers` runs up to four batches from different threads at once (`MAX_CONCURRENT_RUNS`), each in a slot of
   its own; the workers drain whichever slots have chunks left, each starting from its own slot, and every caller still
   works on its batch. Before, a second batch was refused and its caller did every chunk alone, which is what happened

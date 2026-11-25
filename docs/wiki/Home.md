@@ -8,7 +8,7 @@ On its own, Celeris adds nothing you can see in the game. Other mods use it. You
 - Mod loaders: NeoForge, or Fabric with Fabric API
 - Runs on: the client and the server
 - Java: 21 for Minecraft 1.21.x, 25 for Minecraft 26.x
-- Current version: 0.3.1.1
+- Current version: 0.3.2
 
 ## Where to start
 

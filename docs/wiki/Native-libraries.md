@@ -23,4 +23,4 @@ Celeris does not stop. It uses the Java code instead, and the log says which one
 
 ## Known issue
 
-Version 0.3.1.1 has a naming problem in its native parts. The details and the workaround are in [Troubleshooting](Troubleshooting#known-issue-in-version-0311).
+Version 0.3.1.1 has a naming problem in its native parts, fixed in 0.3.2. The details are in [Troubleshooting](Troubleshooting#known-issue-in-version-0311).

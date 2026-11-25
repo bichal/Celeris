@@ -9,20 +9,20 @@ Here is an example of a start where the native parts work:
 ```text
 Celeris engine initializing
 Celeris memory backend: FFM
-Celeris compression codec: zstd
+Celeris compression codec: chosen on first use
 Celeris network compression level: 1
 Celeris physics engine: native-jni-avx2
 Celeris engine working
 ```
 
-The line `Celeris engine working` means Celeris started. The physics engine line may appear later, when the first physics work starts.
+The line `Celeris engine working` means Celeris started. Two lines may appear later: `Celeris compression codec: zstd ...` when a mod first compresses something, and the physics engine line when the first physics work starts. If no mod compresses anything, zstd is never loaded.
 
 ## What the values mean
 
 | Log line | Good value | Other values |
 |---|---|---|
 | `Celeris memory backend` | `FFM` | `Unsafe` works without flags on any Java version. `Heap (compat mode)` uses plain Java only, and is the slowest. |
-| `Celeris compression codec` | `zstd` | `deflate` is used when zstd is not available. It works too. |
+| `Celeris compression codec` | `zstd` (after `chosen on first use` at startup) | `deflate` is used when zstd is not available. It works too. |
 | `Celeris physics engine` | `java`, or a name that starts with `native` | `java` is the Java kernel, the default. A mod that asks for the native kernel (Velox does) gets a name that starts with `native`. |
 
 ## Common problems
@@ -60,7 +60,7 @@ Celeris speeds up some parts of the game, not all of them. See [Performance](Per
 
 In version 0.3.1.1, the native parts use function names that do not match the Java classes. Java cannot link them, so the native physics kernel and native zstd are not used. Celeris falls back to the FFM path or to Java code, and it keeps working.
 
-On Java 21, `--enable-preview` lets Celeris use the FFM path, so the native physics kernel can run. See [JVM flags](JVM-flags). The fix is in the source code and will ship in the next release.
+Version 0.3.2 fixes this: update Celeris. On 0.3.1.1, `--enable-preview` on Java 21 lets Celeris use the FFM path, so the native physics kernel can run. See [JVM flags](JVM-flags).
 
 ## Frequently asked questions
 
