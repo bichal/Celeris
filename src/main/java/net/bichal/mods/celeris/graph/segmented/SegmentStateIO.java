@@ -50,14 +50,23 @@ public final class SegmentStateIO {
     public record Result(int applied, int unmatched, int malformed, boolean rejected) {
     }
 
-    /** Bytes {@link #write} may use for the segments passing {@code filter} (null = all). */
-    public static <T> int maxBytes(SegmentedGraph<T> graph, SegmentStateCodec<T> codec, Predicate<GraphSegment<T>> filter) {
-        long total = HEADER_BYTES;
+    /** The segments passing {@code filter} (null = all), in index order. */
+    private static <T> java.util.List<GraphSegment<T>> select(SegmentedGraph<T> graph, Predicate<GraphSegment<T>> filter) {
+        java.util.List<GraphSegment<T>> chosen = new java.util.ArrayList<>();
         for (int i = 0, n = graph.segmentCount(); i < n; i++) {
             GraphSegment<T> s = graph.segmentByIndex(i);
             if (filter == null || filter.test(s)) {
-                total += RECORD_FIXED_BYTES + codec.maxSize(s);
+                chosen.add(s);
             }
+        }
+        return chosen;
+    }
+
+    /** Bytes {@link #write} may use for the segments passing {@code filter} (null = all). */
+    public static <T> int maxBytes(SegmentedGraph<T> graph, SegmentStateCodec<T> codec, Predicate<GraphSegment<T>> filter) {
+        long total = HEADER_BYTES;
+        for (GraphSegment<T> s : select(graph, filter)) {
+            total += RECORD_FIXED_BYTES + codec.maxSize(s);
         }
         if (total > Integer.MAX_VALUE) {
             throw new IllegalStateException("State too large for one buffer");
@@ -72,13 +81,7 @@ public final class SegmentStateIO {
      */
     public static <T> int write(SegmentedGraph<T> graph, SegmentStateCodec<T> codec, ByteBuffer out,
                                 Predicate<GraphSegment<T>> filter) {
-        java.util.List<GraphSegment<T>> chosen = new java.util.ArrayList<>();
-        for (int i = 0, n = graph.segmentCount(); i < n; i++) {
-            GraphSegment<T> s = graph.segmentByIndex(i);
-            if (filter == null || filter.test(s)) {
-                chosen.add(s);
-            }
-        }
+        java.util.List<GraphSegment<T>> chosen = select(graph, filter);
         chosen.sort((a, b) -> {
             int c = Long.compare(a.nodeA().raw(), b.nodeA().raw());
             return c != 0 ? c : Long.compare(a.rawPositionAt(1), b.rawPositionAt(1));

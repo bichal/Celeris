@@ -477,22 +477,8 @@ public final class SegmentedGraphImpl<T> implements SegmentedGraph<T> {
     @Override
     public Map<GraphSegment<T>, Integer> neighbors(GraphSegment<T> segment) {
         Map<GraphSegment<T>, Integer> result = new HashMap<>(12);
-        collectNeighbor(segment.nodeA().raw(), segment, result);
-        collectNeighbor(segment.nodeB().raw(), segment, result);
+        forEachNeighbor(segment, result::put);
         return result;
-    }
-
-    private void collectNeighbor(long endpointRaw, GraphSegment<T> self, Map<GraphSegment<T>, Integer> out) {
-        GraphSegmentImpl<T>[] byDir = segmentsByEndpointDir.get(endpointRaw);
-        if (byDir == null) {
-            return;
-        }
-        for (int d = 0; d < DIRS; d++) {
-            GraphSegmentImpl<T> other = byDir[d];
-            if (other != null && other != self) {
-                out.put(other, d);
-            }
-        }
     }
 
     private void removeSegmentsTouching(long idRaw) {

@@ -16,25 +16,12 @@ public final class PhysicsJniTestAccess {
 
     /** ISAs the native kernel can run on this CPU, by name. Restores the default afterwards. */
     public static String[] jniIsas() {
-        int active = JniPhysicsKernel.activeIsa();
-        StringBuilder out = new StringBuilder();
-        for (int isa = 0; isa < JniPhysicsKernel.ISA_NAMES.length; isa++) {
-            if (JniPhysicsKernel.forceIsa(isa) == isa) {
-                out.append(out.length() == 0 ? "" : ",").append(JniPhysicsKernel.ISA_NAMES[isa]);
-            }
-        }
-        JniPhysicsKernel.forceIsa(active);
-        return out.toString().split(",");
+        return NativeKernel.supported(JniPhysicsKernel.ISA);
     }
 
     /** Pins the native ISA by name; returns the active ISA name. */
     public static String forceJniIsa(String isa) {
-        for (int i = 0; i < JniPhysicsKernel.ISA_NAMES.length; i++) {
-            if (JniPhysicsKernel.ISA_NAMES[i].equals(isa)) {
-                JniPhysicsKernel.forceIsa(i);
-            }
-        }
-        return JniPhysicsKernel.ISA_NAMES[JniPhysicsKernel.activeIsa()];
+        return NativeKernel.force(JniPhysicsKernel.ISA, isa, false);
     }
 
     /** The engine family {@code CelerisPhysics} would try for a property value and a native request. */

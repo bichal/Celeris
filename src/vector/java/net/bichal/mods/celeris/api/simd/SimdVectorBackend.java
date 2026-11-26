@@ -42,9 +42,7 @@ public final class SimdVectorBackend implements VectorBackend {
             FloatVector vb = FloatVector.fromArray(SPECIES, b, i);
             va.add(vb).intoArray(a, i);
         }
-        for (; i < length; i++) {
-            a[i] += b[i];
-        }
+        ScalarVectorBackend.add(a, b, i, length);
     }
 
     @Override
@@ -56,9 +54,7 @@ public final class SimdVectorBackend implements VectorBackend {
             FloatVector vb = FloatVector.fromArray(SPECIES, b, i);
             va.sub(vb).intoArray(a, i);
         }
-        for (; i < length; i++) {
-            a[i] -= b[i];
-        }
+        ScalarVectorBackend.subtract(a, b, i, length);
     }
 
     @Override
@@ -71,11 +67,7 @@ public final class SimdVectorBackend implements VectorBackend {
             FloatVector vb = FloatVector.fromArray(SPECIES, b, i);
             accumulator = va.fma(vb, accumulator);
         }
-        float sum = accumulator.reduceLanes(VectorOperators.ADD);
-        for (; i < length; i++) {
-            sum = Math.fma(a[i], b[i], sum);
-        }
-        return sum;
+        return ScalarVectorBackend.dot(a, b, i, length, accumulator.reduceLanes(VectorOperators.ADD));
     }
 
     @Override
@@ -87,9 +79,7 @@ public final class SimdVectorBackend implements VectorBackend {
             var mask = v.compare(VectorOperators.GT, threshold);
             mask.intoArray(outMask, i);
         }
-        for (; i < length; i++) {
-            outMask[i] = values[i] > threshold;
-        }
+        ScalarVectorBackend.threshold(values, outMask, i, length, threshold);
     }
 
     @Override
@@ -102,9 +92,7 @@ public final class SimdVectorBackend implements VectorBackend {
             var mask = va.compare(VectorOperators.GT, vb);
             mask.intoArray(outMask, i);
         }
-        for (; i < length; i++) {
-            outMask[i] = a[i] > b[i];
-        }
+        ScalarVectorBackend.greaterThan(a, b, outMask, i, length);
     }
 
     // ---------------------------------------------------------------

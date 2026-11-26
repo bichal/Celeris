@@ -1,6 +1,5 @@
 package net.bichal.mods.celeris.physics;
 
-import net.bichal.mods.celeris.util.NativeLibraries;
 
 /**
  * Calls into {@code libceleris_physics} (see {@code native/}) over JNI
@@ -19,19 +18,22 @@ import net.bichal.mods.celeris.util.NativeLibraries;
  */
 final class JniPhysicsKernel {
 
-    static final String[] ISA_NAMES = {"generic", "avx2", "avx512", "neon"};
+    /** ISA controls for {@link NativeKernel}. */
+    static final NativeKernel.Control ISA = new NativeKernel.Control() {
+        @Override
+        public int activeIsa() {
+            return nativeActiveIsa();
+        }
 
-    /** CP_BROADPHASE_STOP_AT_CAPACITY. */
-    private static final int STOP_AT_CAPACITY = 1;
+        @Override
+        public int forceIsa(int isa) {
+            return nativeForceIsa(isa);
+        }
+    };
 
     static {
-        System.load(NativeLibraries.extract(libraryFile()).toAbsolutePath().toString());
-        int version = nativeAbiVersion();
-        int layout = nativeLayoutSignature();
-        if (version != BodyLayout.ABI_VERSION || layout != BodyLayout.signature()) {
-            throw new IllegalStateException("celeris_physics ABI " + version + "/0x" + Integer.toHexString(layout)
-                    + " does not match Java " + BodyLayout.ABI_VERSION + "/0x" + Integer.toHexString(BodyLayout.signature()));
-        }
+        System.load(NativeKernel.extractLibrary().toAbsolutePath().toString());
+        NativeKernel.checkAbi(nativeAbiVersion(), nativeLayoutSignature());
         // JNI binds lazily: call every entry point once, with null arguments the kernel
         // rejects (-1) without touching memory, so a library that lacks a symbol fails
         // here (and selection falls back) instead of at the first tick.
@@ -41,54 +43,24 @@ final class JniPhysicsKernel {
         }
         nativeActiveIsa();
         RawMemory.probe();
-        String isa = System.getProperty("celeris.physics.isa");
-        if (isa != null) {
-            for (int k = 0; k < ISA_NAMES.length; k++) {
-                if (ISA_NAMES[k].equalsIgnoreCase(isa)) {
-                    nativeForceIsa(k);
-                }
-            }
-        }
+        NativeKernel.applyRequested(ISA);
     }
 
     private JniPhysicsKernel() {
     }
 
-    static String libraryFile() {
-        return NativeLibraries.isWindows() ? "celeris_physics.dll"
-                : NativeLibraries.isMac() ? "libceleris_physics.dylib"
-                : "libceleris_physics.so";
-    }
-
     static String name() {
-        return "native-jni-" + ISA_NAMES[activeIsa()];
-    }
-
-    static int activeIsa() {
-        return nativeActiveIsa();
-    }
-
-    /** Pins an ISA (tests). Returns the ISA now active; unsupported requests are ignored. */
-    static int forceIsa(int isa) {
-        return nativeForceIsa(isa);
+        return "native-jni-" + NativeKernel.activeName(ISA);
     }
 
     static int step(long slab, int capacity, long terrain, int begin, int end, int mode) {
-        int deferred = nativeStep(slab, capacity, terrain, begin, end, mode);
-        if (deferred < 0) {
-            throw new IllegalArgumentException("cp_step rejected chunk [" + begin + ", " + end + ") of capacity " + capacity);
-        }
-        return deferred;
+        return NativeKernel.checkStep(nativeStep(slab, capacity, terrain, begin, end, mode), begin, end, capacity);
     }
 
     static int broadphase(long slab, int capacity, int count, long buckets, int bucketInts, double margin,
                           long pairs, int pairCapacity, boolean stopAtCapacity) {
-        int found = nativeBroadphase(slab, capacity, count, buckets, bucketInts, margin, pairs, pairCapacity,
-                stopAtCapacity ? STOP_AT_CAPACITY : 0);
-        if (found < 0) {
-            throw new IllegalArgumentException("cp_broadphase rejected count " + count + " of capacity " + capacity);
-        }
-        return found;
+        return NativeKernel.checkBroadphase(nativeBroadphase(slab, capacity, count, buckets, bucketInts, margin, pairs,
+                pairCapacity, NativeKernel.broadphaseFlags(stopAtCapacity)), count, capacity);
     }
 
     private static native int nativeAbiVersion();

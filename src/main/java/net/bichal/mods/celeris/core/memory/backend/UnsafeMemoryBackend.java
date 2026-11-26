@@ -1,8 +1,8 @@
 package net.bichal.mods.celeris.core.memory.backend;
 
+import net.bichal.mods.celeris.util.UnsafeAccess;
 import sun.misc.Unsafe;
 
-import java.lang.reflect.Field;
 import java.util.Arrays;
 
 /**
@@ -31,7 +31,7 @@ import java.util.Arrays;
 @SuppressWarnings("removal")
 public final class UnsafeMemoryBackend implements MemoryBackend {
 
-    private static final Unsafe UNSAFE = loadUnsafe();
+    private static final Unsafe UNSAFE = UnsafeAccess.UNSAFE;
     private static final long BYTE_ARRAY_BASE = Unsafe.ARRAY_BYTE_BASE_OFFSET;
     private static final int INITIAL_CAPACITY = 64;
     /** malloc already guarantees this much alignment on every supported platform. */
@@ -53,21 +53,9 @@ public final class UnsafeMemoryBackend implements MemoryBackend {
     private final Object tableLock = new Object();
     private boolean closed;
 
-    private static Unsafe loadUnsafe() {
-        try {
-            Field field = Unsafe.class.getDeclaredField("theUnsafe");
-            field.setAccessible(true);
-            return (Unsafe) field.get(null);
-        } catch (ReflectiveOperationException e) {
-            throw new ExceptionInInitializerError(e);
-        }
-    }
-
     @Override
     public long allocate(long byteSize, long alignment) {
-        if (byteSize < 0 || alignment <= 0 || Long.bitCount(alignment) != 1) {
-            throw new IllegalArgumentException("Invalid allocation: size=" + byteSize + ", alignment=" + alignment);
-        }
+        UnsafeAccess.checkAllocation(byteSize, alignment);
         // Over-allocate only when malloc's natural alignment is not enough.
         long padding = alignment > NATURAL_ALIGNMENT ? alignment - 1 : 0;
         long raw = UNSAFE.allocateMemory(Math.max(1, byteSize + padding)); // throws OutOfMemoryError

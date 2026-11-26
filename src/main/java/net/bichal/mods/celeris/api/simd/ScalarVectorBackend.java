@@ -27,43 +27,64 @@ final class ScalarVectorBackend implements VectorBackend {
 
     @Override
     public void addInPlace(float[] a, float[] b, int length) {
-        for (int i = 0; i < length; i++) {
-            a[i] += b[i];
-        }
+        add(a, b, 0, length);
     }
 
     @Override
     public void subtractInPlace(float[] a, float[] b, int length) {
-        for (int i = 0; i < length; i++) {
-            a[i] -= b[i];
-        }
+        subtract(a, b, 0, length);
     }
 
     @Override
     public float dotProduct(float[] a, float[] b, int length) {
-        float sum = 0f;
-        for (int i = 0; i < length; i++) {
-            sum = Math.fma(a[i], b[i], sum);
-        }
-        return sum;
+        return dot(a, b, 0, length, 0f);
     }
 
     @Override
     public void thresholdMask(float[] values, boolean[] outMask, int length, float threshold) {
-        for (int i = 0; i < length; i++) {
-            outMask[i] = values[i] > threshold;
-        }
+        threshold(values, outMask, 0, length, threshold);
     }
 
     @Override
     public void greaterThanMask(float[] a, float[] b, boolean[] outMask, int length) {
-        for (int i = 0; i < length; i++) {
-            outMask[i] = a[i] > b[i];
-        }
+        greaterThan(a, b, outMask, 0, length);
     }
 
     @Override
     public String name() {
         return net.bichal.mods.celeris.core.memory.backend.CelerisRuntime.isCompatModeForced() ? "scalar (compat mode)" : "scalar";
+    }
+
+    // Element ranges [from, to): this backend's bodies and the SIMD backend's tails.
+
+    static void add(float[] a, float[] b, int from, int to) {
+        for (int i = from; i < to; i++) {
+            a[i] += b[i];
+        }
+    }
+
+    static void subtract(float[] a, float[] b, int from, int to) {
+        for (int i = from; i < to; i++) {
+            a[i] -= b[i];
+        }
+    }
+
+    static float dot(float[] a, float[] b, int from, int to, float sum) {
+        for (int i = from; i < to; i++) {
+            sum = Math.fma(a[i], b[i], sum);
+        }
+        return sum;
+    }
+
+    static void threshold(float[] values, boolean[] outMask, int from, int to, float threshold) {
+        for (int i = from; i < to; i++) {
+            outMask[i] = values[i] > threshold;
+        }
+    }
+
+    static void greaterThan(float[] a, float[] b, boolean[] outMask, int from, int to) {
+        for (int i = from; i < to; i++) {
+            outMask[i] = a[i] > b[i];
+        }
     }
 }
