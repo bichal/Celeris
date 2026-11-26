@@ -73,7 +73,10 @@ authors = "Bichal"
 description = "Celeris: off-heap memory management, lock-free concurrency, and native SIMD/compression engine for NeoForge and Fabric."
 side = "BOTH"
 issues = "https://github.com/bichal/Celeris/issues"
-banner = "banner.png"
+# Packed into the jar by bichal-build-logic: icon (square) for Fabric's mod
+# list, banner (wide) for NeoForge's. The README and the sites use the same files.
+icon = "docs/media/logo.png"
+banner = "docs/media/banner.png"
 
 # One build per binary-compatible group of Minecraft versions, each boot-tested
 # on real NeoForge servers for every version listed in its game_versions:
