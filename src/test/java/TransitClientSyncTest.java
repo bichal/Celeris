@@ -77,12 +77,6 @@ class TransitClientSyncTest {
         }
     }
 
-    private Map<Long, GraphSegment<TransitPayload>> byId() {
-        Map<Long, GraphSegment<TransitPayload>> map = new HashMap<>();
-        for (GraphSegment<TransitPayload> s : graph.segments()) map.put(s.id(), s);
-        return map;
-    }
-
     private void endTick() {
         recorder.drain(solver.tickCount());
     }

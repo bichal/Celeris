@@ -57,8 +57,6 @@ public final class TopologicalDAGSolver {
     private final NetworkTopology topology;
     private final DiscreteNodeStore nodes;
     private final DirtyQueue dirtyQueue;
-    @SuppressWarnings("FieldCanBeLocal")
-    private final PropagationBudget budget;
 
     // Scratch buffers, reused across propagate() calls -- zero per-tick
     // allocation once warmed up, sized to PropagationBudget.maxNodesPerPass().
@@ -83,7 +81,6 @@ public final class TopologicalDAGSolver {
         this.topology = topology;
         this.nodes = nodes;
         this.dirtyQueue = dirtyQueue;
-        this.budget = budget;
         int cap = budget.maxNodesPerPass();
         this.discoveredScratch = new int[cap];
         this.inDegreeScratch = new int[cap];
@@ -103,11 +100,6 @@ public final class TopologicalDAGSolver {
             java.util.Arrays.fill(grown, -1);
             denseToLocal = grown;
         }
-    }
-
-    private int localOf(int denseIndex) {
-        int[] t = denseToLocal;
-        return denseIndex < t.length ? t[denseIndex] : -1;
     }
 
     void setLevelChangeSink(DiscreteGraphImpl.LevelChangeSink sink) {
