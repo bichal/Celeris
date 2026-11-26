@@ -306,7 +306,6 @@ native kernel). The JMH benchmarks (`*Bench`) belong to the bench harness and Ve
 | `RingBufferBenchmarkTest` | MPSC throughput against `ArrayBlockingQueue`, `LinkedBlockingQueue`, `ConcurrentLinkedQueue` | this repo, `benchmarkTest` |
 | `cp_bench` | Step time of several builds of the native library, timed interleaved in one process | this repo, `native/test` (CMake target `cp_bench`) |
 | `Native bench` workflow | `cp_bench` on the x86-64 and ARM runners for any list of refs (manual) | this repo, `.github/workflows/native-bench.yml` |
-| `Nearest3BenchmarkTest` | Nearest-of-3 query, packed-long loop against the `int[]` kernel | this repo, `benchmarkTest` |
 | `TransitBench` | Items in pipes, flat layout against objects | JMH, sections above |
 | `BulkBuildBench` | `addNodes` against adding blocks one by one | JMH, sections above |
 | In-game `perf-test` | Server tick time with N dropped items | bichal-build-logic workflow |

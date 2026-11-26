@@ -8,11 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class Nearest3Test {
 
     /** The packed-long loop of the vanilla aquifer search, kept as the oracle. */
-    static long[] reference(long[] packed, int x, int y, int z) {
-        return reference(packed, x, y, z, new long[6]);
-    }
-
-    static long[] reference(long[] packed, int x, int y, int z, long[] out) {
+    private static long[] reference(long[] packed, int x, int y, int z) {
+        long[] out = new long[6];
         int d1 = Integer.MAX_VALUE, d2 = Integer.MAX_VALUE, d3 = Integer.MAX_VALUE;
         long p1 = 0, p2 = 0, p3 = 0;
         for (long p : packed) {
@@ -28,7 +25,7 @@ class Nearest3Test {
         return out;
     }
 
-    static long pack(int x, int y, int z) {
+    private static long pack(int x, int y, int z) {
         return ((long) x & 0x3FFFFFFL) << 38 | ((long) z & 0x3FFFFFFL) << 12 | (long) y & 0xFFFL;
     }
 
