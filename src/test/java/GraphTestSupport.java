@@ -56,8 +56,7 @@ final class GraphTestSupport {
         return ConnectionMask.of(bits);
     }
 
-    @SuppressWarnings("SameParameterValue")
-    static void addStraightLine(SegmentedGraphImpl<String> graph, NodeId start, int axisDirection, int blockCount) {
+    static void addStraightLine(SegmentedGraphImpl<?> graph, NodeId start, int axisDirection, int blockCount) {
         int opposite = opposite(axisDirection);
         for (int i = 0; i < blockCount; i++) {
             NodeId pos = relative(start, axisDirection, i);
@@ -74,6 +73,21 @@ final class GraphTestSupport {
                 graph.addNode(pos, dirs(axisDirection, opposite));
             }
         }
+    }
+
+    /**
+     * Ten blocks east of {@code start}: both ends turn north, the straight blocks go in first,
+     * then block 5 with {@code junction}'s connections, then the far end.
+     */
+    static void addLineWithJunction(SegmentedGraphImpl<?> graph, NodeId start, ConnectionMask junction) {
+        graph.addNode(start, dirs(EAST, NORTH));
+        for (int i = 1; i < 10; i++) {
+            if (i != 5) {
+                graph.addNode(relative(start, EAST, i), dirs(EAST, WEST));
+            }
+        }
+        graph.addNode(relative(start, EAST, 5), junction);
+        graph.addNode(relative(start, EAST, 10), dirs(WEST, NORTH));
     }
 
     static GraphSegment<String> onlySegment(SegmentedGraphImpl<String> graph) {

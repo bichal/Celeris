@@ -32,16 +32,8 @@ class NetworkGraphPayloadTest {
 
         NodeId start = GraphTestSupport.pos(0, 0, 0);
         NodeId mid = GraphTestSupport.relative(start, GraphTestSupport.EAST, 5);
-        NodeId end = GraphTestSupport.relative(start, GraphTestSupport.EAST, 10);
 
-        graph.addNode(start, GraphTestSupport.dirs(GraphTestSupport.EAST, GraphTestSupport.NORTH));
-        for (int i = 1; i < 10; i++) {
-            if (i == 5) continue;
-            graph.addNode(GraphTestSupport.relative(start, GraphTestSupport.EAST, i),
-                    GraphTestSupport.dirs(GraphTestSupport.EAST, GraphTestSupport.WEST));
-        }
-        graph.addNode(mid, GraphTestSupport.dirs(GraphTestSupport.EAST, GraphTestSupport.WEST));
-        graph.addNode(end, GraphTestSupport.dirs(GraphTestSupport.WEST, GraphTestSupport.NORTH));
+        GraphTestSupport.addLineWithJunction(graph, start, GraphTestSupport.dirs(GraphTestSupport.EAST, GraphTestSupport.WEST));
 
         int payloadsSoFar = counter.get();
 

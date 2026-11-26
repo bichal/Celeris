@@ -42,10 +42,25 @@ class ZstdJniCodecTest {
     }
 
     private static byte[] roundTrip(CompressionCodec codec, MemoryBackend backend, byte[] original, int level) {
+        return roundTrip(codec, backend, original, level, false);
+    }
+
+    /**
+     * Compresses and restores {@code original}. With {@code locked}, allocation and freeing happen
+     * under the backend's lock (its contract for concurrent callers) and compression outside it.
+     */
+    private static byte[] roundTrip(CompressionCodec codec, MemoryBackend backend, byte[] original, int level,
+                                    boolean locked) {
         long bound = codec.compressBound(original.length);
-        long src = backend.allocate(Math.max(1, original.length), 8L);
-        long packed = backend.allocate(bound, 8L);
-        long out = backend.allocate(Math.max(1, original.length), 8L);
+        long[] h = new long[3];
+        if (locked) {
+            synchronized (backend) {
+                allocate(backend, h, original.length, bound);
+            }
+        } else {
+            allocate(backend, h, original.length, bound);
+        }
+        long src = h[0], packed = h[1], out = h[2];
         try {
             backend.copyFromHeap(src, 0L, original, 0, original.length);
             long size = codec.compress(backend, packed, bound, src, 0L, original.length, level);
@@ -56,9 +71,25 @@ class ZstdJniCodecTest {
             backend.copyToHeap(out, 0L, result, 0, result.length);
             return result;
         } finally {
-            backend.free(src);
-            backend.free(packed);
-            backend.free(out);
+            if (locked) {
+                synchronized (backend) {
+                    free(backend, h);
+                }
+            } else {
+                free(backend, h);
+            }
+        }
+    }
+
+    private static void allocate(MemoryBackend backend, long[] h, int length, long bound) {
+        h[0] = backend.allocate(Math.max(1, length), 8L);
+        h[1] = backend.allocate(bound, 8L);
+        h[2] = backend.allocate(Math.max(1, length), 8L);
+    }
+
+    private static void free(MemoryBackend backend, long[] h) {
+        for (long handle : h) {
+            backend.free(handle);
         }
     }
 
@@ -109,7 +140,7 @@ class ZstdJniCodecTest {
                     Random rng = new Random(thread);
                     for (int i = 0; i < 300; i++) {
                         byte[] original = sample(1 + rng.nextInt(40_000), rng.nextBoolean(), rng.nextLong());
-                        assertArrayEquals(original, roundTripLocked(codec, backend, original),
+                        assertArrayEquals(original, roundTrip(codec, backend, original, 3, true),
                                 "thread " + thread + " op " + i);
                     }
                     return null;
@@ -120,32 +151,6 @@ class ZstdJniCodecTest {
             }
         } finally {
             pool.shutdownNow();
-        }
-    }
-
-    /** Allocation under the backend's lock (its contract), compression outside it, concurrently. */
-    private static byte[] roundTripLocked(CompressionCodec codec, MemoryBackend backend, byte[] original) {
-        long bound = codec.compressBound(original.length);
-        long src, packed, out;
-        synchronized (backend) {
-            src = backend.allocate(original.length, 8L);
-            packed = backend.allocate(bound, 8L);
-            out = backend.allocate(original.length, 8L);
-        }
-        try {
-            backend.copyFromHeap(src, 0L, original, 0, original.length);
-            long size = codec.compress(backend, packed, bound, src, 0L, original.length, 3);
-            long restored = codec.decompress(backend, out, original.length, packed, 0L, size);
-            assertEquals(original.length, restored);
-            byte[] result = new byte[original.length];
-            backend.copyToHeap(out, 0L, result, 0, result.length);
-            return result;
-        } finally {
-            synchronized (backend) {
-                backend.free(src);
-                backend.free(packed);
-                backend.free(out);
-            }
         }
     }
 

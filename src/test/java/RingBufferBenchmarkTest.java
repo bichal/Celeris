@@ -94,159 +94,79 @@ class RingBufferBenchmarkTest {
 
     private long runRingBufferTrial() {
         try (MpscRingBuffer ring = new MpscRingBuffer(RING_CAPACITY_TUNED, Long.BYTES)) {
-            AtomicLong consumed = new AtomicLong();
-            CountDownLatch startLatch = new CountDownLatch(1);
+            long[] out = new long[CONSUME_BATCH];
+            return timeTrial(() -> publishWithBackoff(ring, 1L), () -> ring.tryConsumeBatch(out, 0, CONSUME_BATCH));
+        }
+    }
 
-            Thread[] producers = new Thread[PRODUCERS];
-            for (int p = 0; p < PRODUCERS; p++) {
-                producers[p] = new Thread(() -> {
-                    try {
-                        startLatch.await();
-                        for (int i = 0; i < ITEMS_PER_PRODUCER; i++) {
-                            publishWithBackoff(ring, 1L);
-                        }
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
+    private long runArrayBlockingQueueTrial() {
+        ArrayBlockingQueue<Long> queue = new ArrayBlockingQueue<>(RING_CAPACITY);
+        return timeTrial(() -> queue.put(1L), () -> {
+            queue.take();
+            return 1;
+        });
+    }
+
+    private long runLinkedBlockingQueueTrial() {
+        LinkedBlockingQueue<Long> queue = new LinkedBlockingQueue<>(RING_CAPACITY);
+        return timeTrial(() -> queue.put(1L), () -> {
+            queue.take();
+            return 1;
+        });
+    }
+
+    /** Unbounded: the best-case baseline. */
+    private long runConcurrentLinkedQueueTrial() {
+        ConcurrentLinkedQueue<Long> queue = new ConcurrentLinkedQueue<>();
+        return timeTrial(() -> queue.offer(1L), () -> queue.poll() != null ? 1 : 0);
+    }
+
+    //* Shared trial runner
+
+    /** Publishes one item, blocking or spinning until it fits. */
+    private interface Produce {
+        void one() throws InterruptedException;
+    }
+
+    /** Takes what is ready; returns how many items (0 when none). */
+    private interface Drain {
+        int some() throws InterruptedException;
+    }
+
+    /** {@link #PRODUCERS} threads each produce {@link #ITEMS_PER_PRODUCER} items; returns ops/s. */
+    private long timeTrial(Produce produce, Drain drain) {
+        AtomicLong consumed = new AtomicLong();
+        CountDownLatch startLatch = new CountDownLatch(1);
+        long expectedTotal = (long) PRODUCERS * ITEMS_PER_PRODUCER;
+
+        Thread[] producers = new Thread[PRODUCERS];
+        for (int p = 0; p < PRODUCERS; p++) {
+            producers[p] = new Thread(() -> {
+                try {
+                    startLatch.await();
+                    for (int i = 0; i < ITEMS_PER_PRODUCER; i++) {
+                        produce.one();
                     }
-                });
-            }
-
-            long expectedTotal = (long) PRODUCERS * ITEMS_PER_PRODUCER;
-            Thread consumer = new Thread(() -> {
-                long[] out = new long[CONSUME_BATCH];
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            });
+        }
+        Thread consumer = new Thread(() -> {
+            try {
                 while (consumed.get() < expectedTotal) {
-                    int drained = ring.tryConsumeBatch(out, 0, CONSUME_BATCH);
+                    int drained = drain.some();
                     if (drained > 0) {
                         consumed.addAndGet(drained);
                     } else {
                         Thread.onSpinWait();
                     }
                 }
-            });
-
-            return timeTrial(startLatch, producers, consumer, expectedTotal, consumed);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    // ---------------------------------------------------------------
-    // ArrayBlockingQueue
-    // ---------------------------------------------------------------
-
-    private long runArrayBlockingQueueTrial() {
-        ArrayBlockingQueue<Long> queue = new ArrayBlockingQueue<>(RING_CAPACITY);
-        AtomicLong consumed = new AtomicLong();
-        CountDownLatch startLatch = new CountDownLatch(1);
-
-        Thread[] producers = new Thread[PRODUCERS];
-        for (int p = 0; p < PRODUCERS; p++) {
-            producers[p] = new Thread(() -> {
-                try {
-                    startLatch.await();
-                    for (int i = 0; i < ITEMS_PER_PRODUCER; i++) {
-                        queue.put(1L);
-                    }
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            });
-        }
-
-        long expectedTotal = (long) PRODUCERS * ITEMS_PER_PRODUCER;
-        Thread consumer = new Thread(() -> {
-            try {
-                while (consumed.get() < expectedTotal) {
-                    queue.take();
-                    consumed.incrementAndGet();
-                }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         });
 
-        return timeTrial(startLatch, producers, consumer, expectedTotal, consumed);
-    }
-
-    // ---------------------------------------------------------------
-    // LinkedBlockingQueue
-    // ---------------------------------------------------------------
-
-    private long runLinkedBlockingQueueTrial() {
-        LinkedBlockingQueue<Long> queue = new LinkedBlockingQueue<>(RING_CAPACITY);
-        AtomicLong consumed = new AtomicLong();
-        CountDownLatch startLatch = new CountDownLatch(1);
-
-        Thread[] producers = new Thread[PRODUCERS];
-        for (int p = 0; p < PRODUCERS; p++) {
-            producers[p] = new Thread(() -> {
-                try {
-                    startLatch.await();
-                    for (int i = 0; i < ITEMS_PER_PRODUCER; i++) {
-                        queue.put(1L);
-                    }
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            });
-        }
-
-        long expectedTotal = (long) PRODUCERS * ITEMS_PER_PRODUCER;
-        Thread consumer = new Thread(() -> {
-            try {
-                while (consumed.get() < expectedTotal) {
-                    queue.take();
-                    consumed.incrementAndGet();
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        });
-
-        return timeTrial(startLatch, producers, consumer, expectedTotal, consumed);
-    }
-
-    // ---------------------------------------------------------------
-    // ConcurrentLinkedQueue (unbounded -- best-case baseline)
-    // ---------------------------------------------------------------
-
-    private long runConcurrentLinkedQueueTrial() {
-        ConcurrentLinkedQueue<Long> queue = new ConcurrentLinkedQueue<>();
-        AtomicLong consumed = new AtomicLong();
-        CountDownLatch startLatch = new CountDownLatch(1);
-
-        Thread[] producers = new Thread[PRODUCERS];
-        for (int p = 0; p < PRODUCERS; p++) {
-            producers[p] = new Thread(() -> {
-                try {
-                    startLatch.await();
-                    for (int i = 0; i < ITEMS_PER_PRODUCER; i++) {
-                        queue.offer(1L);
-                    }
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            });
-        }
-
-        long expectedTotal = (long) PRODUCERS * ITEMS_PER_PRODUCER;
-        Thread consumer = new Thread(() -> {
-            while (consumed.get() < expectedTotal) {
-                if (queue.poll() != null) {
-                    consumed.incrementAndGet();
-                } else {
-                    Thread.onSpinWait();
-                }
-            }
-        });
-
-        return timeTrial(startLatch, producers, consumer, expectedTotal, consumed);
-    }
-
-    //* Shared trial runner
-
-    private long timeTrial(CountDownLatch startLatch, Thread[] producers, Thread consumer,
-                           long expectedTotal, AtomicLong consumed) {
         try {
             for (Thread p : producers) {
                 p.start();

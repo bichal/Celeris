@@ -1,9 +1,7 @@
 import net.bichal.mods.celeris.framework.async.AsyncResultQueue;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicLongArray;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -23,100 +21,21 @@ class AsyncResultQueueSmokeTest {
     void handlesConcurrentProducersWithoutLossDuplicationOrNulls() throws Exception {
         int producers = 8;
         int itemsPerProducer = 150_000;
-        int capacity = 1 << 6; // small on purpose: forces frequent slot reuse
-
-        try (AsyncResultQueue<WorkResult> queue = new AsyncResultQueue<>(capacity)) {
-            AtomicLongArray seenCounts = new AtomicLongArray(producers * itemsPerProducer);
-            AtomicLong published = new AtomicLong();
-            AtomicLong consumed = new AtomicLong();
-            AtomicLong corrupted = new AtomicLong();
+        // Small capacity on purpose: forces frequent slot reuse.
+        try (AsyncResultQueue<WorkResult> queue = new AsyncResultQueue<>(1 << 6)) {
             AtomicLong nullsObserved = new AtomicLong();
-
-            CountDownLatch startLatch = new CountDownLatch(1);
-            Thread[] producerThreads = new Thread[producers];
-
-            for (int p = 0; p < producers; p++) {
-                final int producerId = p;
-                producerThreads[p] = new Thread(() -> {
-                    try {
-                        startLatch.await();
-                        for (int i = 0; i < itemsPerProducer; i++) {
-                            WorkResult result = new WorkResult(producerId, i);
-                            int spins = 0;
-                            while (!queue.offer(result)) {
-                                spins++;
-                                if (spins < 100) {
-                                    Thread.onSpinWait();
-                                } else {
-                                    Thread.yield();
-                                }
-                            }
-                            published.incrementAndGet();
-                        }
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                });
-            }
-
-            long expectedTotal = (long) producers * itemsPerProducer;
-            Thread consumerThread = new Thread(() -> {
-                int spins = 0;
-                while (consumed.get() < expectedTotal) {
-                    int drained = queue.drainTo(result -> {
-                        if (result == null) {
+            MpscStress.Result result = MpscStress.run(producers, itemsPerProducer, 10_000,
+                    (p, i) -> queue.offer(new WorkResult(p, i)),
+                    sink -> queue.drainTo(r -> {
+                        if (r == null) {
                             nullsObserved.incrementAndGet();
-                            return;
-                        }
-                        int index = result.producerId() * itemsPerProducer + result.sequence();
-                        if (index < 0 || index >= seenCounts.length()) {
-                            corrupted.incrementAndGet();
-                        } else if (seenCounts.getAndIncrement(index) != 0) {
-                            corrupted.incrementAndGet();
-                        }
-                    }, 16);
-
-                    if (drained > 0) {
-                        spins = 0;
-                        consumed.addAndGet(drained);
-                    } else {
-                        spins++;
-                        if (spins < 100) {
-                            Thread.onSpinWait();
                         } else {
-                            Thread.yield();
+                            sink.accept(r.producerId(), r.sequence());
                         }
-                    }
-                }
-            });
-
-            for (Thread t : producerThreads) {
-                t.start();
-            }
-            consumerThread.start();
-            startLatch.countDown();
-
-            for (Thread t : producerThreads) {
-                t.join();
-            }
-            consumerThread.join(10_000);
-            if (consumerThread.isAlive()) {
-                consumerThread.interrupt();
-                fail("Consumer thread did not finish within timeout; consumed=" + consumed.get() + " published=" + published.get());
-            }
-
-            long missing = 0;
-            for (int i = 0; i < seenCounts.length(); i++) {
-                if (seenCounts.get(i) == 0) {
-                    missing++;
-                }
-            }
-
+                    }, 16));
             assertEquals(0, nullsObserved.get(),
                     "drainTo observed a null result -- reserveSlot/publishReserved ordering is broken");
-            assertEquals(0, corrupted.get(), "Detected corrupted or duplicated results");
-            assertEquals(0, missing, "Some offered results were never drained");
-            assertEquals(expectedTotal, published.get(), "Unexpected published count");
+            result.assertExact(producers, itemsPerProducer, "");
         }
     }
 

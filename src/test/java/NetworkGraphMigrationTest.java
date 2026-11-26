@@ -78,12 +78,7 @@ class NetworkGraphMigrationTest {
             new SegmentedGraphImpl<>(new NetworkTopologyImpl(), Belt::new, migrator);
 
     private void line(NodeId start, int dir, int count) {
-        int back = GraphTestSupport.opposite(dir);
-        for (int i = 0; i < count; i++) {
-            NodeId pos = GraphTestSupport.relative(start, dir, i);
-            graph.addNode(pos, i == 0 ? GraphTestSupport.dirs(dir)
-                    : i == count - 1 ? GraphTestSupport.dirs(back) : GraphTestSupport.dirs(dir, back));
-        }
+        GraphTestSupport.addStraightLine(graph, start, dir, count);
     }
 
     /** Puts one item on every position of every segment, returns how many were placed. */

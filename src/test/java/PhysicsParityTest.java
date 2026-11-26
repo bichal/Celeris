@@ -102,10 +102,7 @@ class PhysicsParityTest {
                 int na = a.broadphase(0.5, stop);
                 assertEquals(na, b.broadphase(0.5, stop));
                 assertTrue(na > 0);
-                for (int k = 0; k < Math.min(na, 50_000); k++) {
-                    assertEquals(a.pairA(k), b.pairA(k), "pair " + k);
-                    assertEquals(a.pairB(k), b.pairB(k), "pair " + k);
-                }
+                assertSamePairs(a, b, na);
             }
         }
     }
@@ -135,10 +132,14 @@ class PhysicsParityTest {
             int na = a.broadphase(0.5);
             assertEquals(na, b.broadphase(0.5));
             assertTrue(na > 0);
-            for (int k = 0; k < Math.min(na, 50_000); k++) {
-                assertEquals(a.pairA(k), b.pairA(k), "pair " + k);
-                assertEquals(a.pairB(k), b.pairB(k), "pair " + k);
-            }
+            assertSamePairs(a, b, na);
+        }
+    }
+
+    private static void assertSamePairs(BodyBatch a, BodyBatch b, int pairs) {
+        for (int k = 0; k < Math.min(pairs, a.pairCapacity()); k++) {
+            assertEquals(a.pairA(k), b.pairA(k), "pair " + k);
+            assertEquals(a.pairB(k), b.pairB(k), "pair " + k);
         }
     }
 
