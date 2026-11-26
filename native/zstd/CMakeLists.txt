@@ -37,6 +37,11 @@ set(ZSTD_LEGACY_SUPPORT OFF CACHE BOOL "" FORCE)
 # Single-threaded: Celeris compresses on its own threads, and without pthread the
 # Linux library needs nothing newer than glibc 2.14 (built on any runner).
 set(ZSTD_MULTITHREAD_SUPPORT OFF CACHE BOOL "" FORCE)
+# Say "shared" the way zstd expects too, or it warns that its own switch wins.
+set(BUILD_SHARED_LIBS ON)
+# zstd enables ASM; CMake 4.1+ asks whether MSVC (cl) counts as its assembler.
+# Keep the behaviour every release was built with, without the policy warning.
+set(CMAKE_POLICY_DEFAULT_CMP0194 OLD)
 FetchContent_MakeAvailable(zstd)
 
 # CMake's default names for the CI to collect: libzstd.so (not the versioned
